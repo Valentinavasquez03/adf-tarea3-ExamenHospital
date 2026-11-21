@@ -9,7 +9,7 @@
 						"referenceName": "DS_Bronze_Admissions",
 						"type": "DatasetReference"
 					},
-					"name": "source1"
+					"name": "OrigenAdmissions"
 				}
 			],
 			"sinks": [
@@ -41,8 +41,8 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     isolationLevel: 'READ_UNCOMMITTED',",
-				"     format: 'table') ~> source1",
-				"source1 derive(department = coalesce(upper(trim(department)), 'GENERAL')) ~> LimpiezaTexto",
+				"     format: 'table') ~> OrigenAdmissions",
+				"OrigenAdmissions derive(department = coalesce(upper(trim(department)), 'GENERAL')) ~> LimpiezaTexto",
 				"LimpiezaTexto derive(admission_id = toInteger(trim(admission_id)),",
 				"          patient_id = toInteger(trim(patient_id)),",
 				"          attending_doctor_id = coalesce(toInteger(trim(attending_doctor_id)), 0),",
