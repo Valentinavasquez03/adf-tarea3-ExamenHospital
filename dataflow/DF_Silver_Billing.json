@@ -1,0 +1,80 @@
+{
+	"name": "DF_Silver_Billing",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Bronze_Billing",
+						"type": "DatasetReference"
+					},
+					"name": "OrigenBilling"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Billing",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LimpiezaTexto"
+				},
+				{
+					"name": "ConversionTipos"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          billing_id as string,",
+				"          admission_id as string,",
+				"          charge_type as string,",
+				"          amount as string,",
+				"          payment_status as string,",
+				"          payment_date as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> OrigenBilling",
+				"OrigenBilling derive(charge_type = coalesce(upper(trim(charge_type)), 'OTROS'),",
+				"          payment_status = coalesce(upper(trim(payment_status)), 'PENDIENTE')) ~> LimpiezaTexto",
+				"LimpiezaTexto derive(billing_id = toInteger(trim(billing_id)),",
+				"          admission_id = toInteger(trim(admission_id)),",
+				"          amount = coalesce(toDecimal(replace(replace(trim(amount), '$', ''), ',', '.'), 10, 2), toDecimal(0.00, 10, 2)),",
+				"          payment_date = coalesce(toDate(trim(payment_date), 'MMMM dd, yyyy', 'en-US'), toDate(trim(payment_date), 'yyyy-MM-dd'), toDate(trim(payment_date), 'MM-dd-yy'), toDate(trim(payment_date), 'MM/dd/yyyy'), toDate(trim(payment_date), 'dd/MM/yyyy'))) ~> ConversionTipos",
+				"ConversionTipos sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          billing_id as integer,",
+				"          admission_id as integer,",
+				"          charge_type as string,",
+				"          amount as decimal(12,2),",
+				"          payment_status as string,",
+				"          payment_date as date",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          billing_id,",
+				"          admission_id,",
+				"          charge_type,",
+				"          amount,",
+				"          payment_status,",
+				"          payment_date",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
