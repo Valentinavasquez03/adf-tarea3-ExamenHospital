@@ -1,0 +1,76 @@
+{
+	"name": "DF_Silver_Diagnoses",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Bronze_Diagnoses",
+						"type": "DatasetReference"
+					},
+					"name": "OrigenDiagnoses"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Diagnoses",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LimpiezaTexto"
+				},
+				{
+					"name": "ConversionTipos"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          diagnosis_id as string,",
+				"          admission_id as string,",
+				"          icd_code as string,",
+				"          diagnosis_description as string,",
+				"          severity as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> OrigenDiagnoses",
+				"OrigenDiagnoses derive(icd_code = coalesce(upper(trim(icd_code)), 'SIN_CODIGO'),",
+				"          diagnosis_description = coalesce(trim(diagnosis_description), 'SIN DESCRIPCION'),",
+				"          severity = upper(trim(severity))) ~> LimpiezaTexto",
+				"LimpiezaTexto derive(diagnosis_id = toInteger(trim(diagnosis_id)),",
+				"          admission_id = toInteger(trim(admission_id))) ~> ConversionTipos",
+				"ConversionTipos sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          diagnosis_id as integer,",
+				"          admission_id as integer,",
+				"          icd_code as string,",
+				"          diagnosis_description as string,",
+				"          severity as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          diagnosis_id,",
+				"          admission_id,",
+				"          icd_code,",
+				"          diagnosis_description,",
+				"          severity",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
