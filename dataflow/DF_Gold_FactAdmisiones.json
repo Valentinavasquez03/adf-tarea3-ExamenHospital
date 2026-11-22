@@ -1,0 +1,247 @@
+{
+	"name": "DF_Gold_FactAdmisiones",
+	"properties": {
+		"folder": {
+			"name": "DF-Gold"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Silver_Admissions",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_DimPaciente",
+						"type": "DatasetReference"
+					},
+					"name": "DimPaciente"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_DimDepartamento",
+						"type": "DatasetReference"
+					},
+					"name": "DimDepartamento"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_DimDiagnostico",
+						"type": "DatasetReference"
+					},
+					"name": "DimDiagnostico"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_DimFecha",
+						"type": "DatasetReference"
+					},
+					"name": "DimFechaIngreso"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_DimFecha",
+						"type": "DatasetReference"
+					},
+					"name": "DimFechaAlta"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_Gold_FactAdmisiones",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LkpPaciente"
+				},
+				{
+					"name": "LkpDepartamento"
+				},
+				{
+					"name": "LkpDiagnostico"
+				},
+				{
+					"name": "LkpFechaIngreso"
+				},
+				{
+					"name": "LkpFechaAlta"
+				},
+				{
+					"name": "ControlNulosKeys"
+				},
+				{
+					"name": "SelectAdmisiones"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          admission_id_bk as integer,",
+				"          patient_id as integer,",
+				"          department as string,",
+				"          admission_date as date,",
+				"          discharge_date as date,",
+				"          medico_id as integer,",
+				"          dias_estancia as integer,",
+				"          conteo_admisiones as integer,",
+				"          icd_code as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT\\n    a.admission_id AS admission_id_bk,\\n    a.patient_id,\\n    ISNULL(a.department, \\'GENERAL\\') AS department,\\n    a.admission_date,\\n    a.discharge_date,\\n    ISNULL(a.attending_doctor_id, 0) AS medico_id,\\n    CASE WHEN a.discharge_date IS NOT NULL THEN DATEDIFF(DAY, a.admission_date, a.discharge_date) ELSE NULL END AS dias_estancia,\\n    1 AS conteo_admisiones,\\n    d.icd_code\\nFROM silver.admissions a\\nLEFT JOIN (\\n    SELECT admission_id, MIN(icd_code) AS icd_code\\n    FROM silver.diagnoses\\n    GROUP BY admission_id\\n) d ON a.admission_id = d.admission_id',",
+				"     format: 'query') ~> source1",
+				"source(output(",
+				"          paciente_key as integer,",
+				"          patient_id_bk as integer,",
+				"          nombre_completo as string,",
+				"          genero as string,",
+				"          fecha_nacimiento as date,",
+				"          rango_etario as string,",
+				"          correo_electronico as string,",
+				"          direccion as string,",
+				"          proveedor_seguro as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimPaciente",
+				"source(output(",
+				"          departamento_key as integer,",
+				"          nombre_departamento as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimDepartamento",
+				"source(output(",
+				"          diagnostico_key as integer,",
+				"          codigo_icd as string,",
+				"          descripcion_patologia as string,",
+				"          nivel_severidad as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimDiagnostico",
+				"source(output(",
+				"          fecha_key as integer,",
+				"          fecha_completa as date,",
+				"          anio as integer,",
+				"          trimestre as integer,",
+				"          trimestre_nombre as string,",
+				"          mes as integer,",
+				"          mes_nombre as string,",
+				"          mes_corto as string,",
+				"          semana_anio as integer,",
+				"          dia_mes as integer,",
+				"          dia_semana as integer,",
+				"          dia_nombre as string,",
+				"          es_fin_de_semana as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimFechaIngreso",
+				"source(output(",
+				"          fecha_key as integer,",
+				"          fecha_completa as date,",
+				"          anio as integer,",
+				"          trimestre as integer,",
+				"          trimestre_nombre as string,",
+				"          mes as integer,",
+				"          mes_nombre as string,",
+				"          mes_corto as string,",
+				"          semana_anio as integer,",
+				"          dia_mes as integer,",
+				"          dia_semana as integer,",
+				"          dia_nombre as string,",
+				"          es_fin_de_semana as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> DimFechaAlta",
+				"source1, DimPaciente lookup(patient_id == patient_id_bk,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LkpPaciente",
+				"LkpPaciente, DimDepartamento lookup(department == nombre_departamento,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LkpDepartamento",
+				"LkpDepartamento, DimDiagnostico lookup(icd_code == codigo_icd,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LkpDiagnostico",
+				"LkpDiagnostico, DimFechaIngreso lookup(admission_date == fecha_completa,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LkpFechaIngreso",
+				"LkpFechaIngreso, DimFechaAlta lookup(discharge_date == DimFechaAlta@fecha_completa,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LkpFechaAlta",
+				"LkpFechaAlta derive(paciente_key = coalesce(paciente_key, 0),",
+				"          departamento_key = coalesce(departamento_key, 0),",
+				"          diagnostico_key = coalesce(diagnostico_key, 0),",
+				"          fecha_ingreso_key = coalesce(DimFechaIngreso@fecha_key, 19000101),",
+				"          fecha_alta_key = DimFechaAlta@fecha_key) ~> ControlNulosKeys",
+				"ControlNulosKeys select(mapColumn(",
+				"          admission_id_bk,",
+				"          medico_id,",
+				"          dias_estancia,",
+				"          conteo_admisiones,",
+				"          paciente_key,",
+				"          departamento_key,",
+				"          diagnostico_key,",
+				"          fecha_ingreso_key,",
+				"          fecha_alta_key",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectAdmisiones",
+				"SelectAdmisiones sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          admision_key as long,",
+				"          admission_id_bk as integer,",
+				"          paciente_key as integer,",
+				"          departamento_key as integer,",
+				"          diagnostico_key as integer,",
+				"          fecha_ingreso_key as integer,",
+				"          fecha_alta_key as integer,",
+				"          medico_id as integer,",
+				"          dias_estancia as integer,",
+				"          conteo_admisiones as integer",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          admission_id_bk,",
+				"          paciente_key,",
+				"          departamento_key,",
+				"          diagnostico_key,",
+				"          fecha_ingreso_key,",
+				"          fecha_alta_key,",
+				"          medico_id,",
+				"          dias_estancia,",
+				"          conteo_admisiones",
+				"     )) ~> sink1"
+			]
+		}
+	}
+}
